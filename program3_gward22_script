@@ -1,0 +1,221 @@
+Script started on 2025-04-11 19:06:15-04:00
+]0;gward22@mason:~/cs222_pa3[gward22@mason cs222_pa3]$ hostname
+mason.gmu.edu
+]0;gward22@mason:~/cs222_pa3[gward22@mason cs222_pa3]$ uname -a
+Linux mason.gmu.edu 4.18.0-553.34.1.el8_10.x86_64 #1 SMP Mon Dec 16 04:25:43 EST 2024 x86_64 x86_64 x86_64 GNU/Linux
+]0;gward22@mason:~/cs222_pa3[gward22@mason cs222_pa3]$ cat main.c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "firewall_log.h"
+
+int main(int argc, char *argv[]){
+	if (argc != 2){
+		fprintf(stderr, "Usage: %s <logfile>\n", argv[0]);
+		return 1;
+	}
+
+	char lines[MAX_LOGS][512];
+	firewall_log_t logs[MAX_LOGS];
+
+	int count = read_logs_from_file(argv[1], lines);
+	if (count ==0){
+		fprintf(stderr, "Error reading file or file is empty.\n");
+		return 1;
+	}
+
+	for (int i = 0; i < count; i++) {
+		if (parse_log(lines[i], &logs[i]) != 14){
+			fprintf(stderr, "Error parsing line %d\n", i + 1);
+			return 1;
+		}
+	}
+
+	printf("First log parsed:\n");
+	print_log(&logs[0]);
+
+	for (int i = 0; i < count; i++) {
+	    if (strcmp(logs[i].source_ip, "10.189.90.64") == 0 &&
+		strcmp(logs[i].event_outcome, "blocked") == 0 &&
+		strcmp(logs[i].event_category, "spyware") == 0 &&
+		logs[i].server_bytes > 4200) {
+
+		printf("\nMatching log found at index %d:\n", i);
+		print_log(&logs[i]);
+	}
+    }
+    return 0;
+}
+]0;gward22@mason:~/cs222_pa3[gward22@mason cs222_pa3]$ less firewall_log.c 
+[?1049h[22;0;0t[?1h=#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "firewall_log.h"
+
+int read_logs_from_file(const char *filename, char logs[][512]) {
+            FILE *fp = fopen(filename, "r");
+            if (!fp) return 0;
+            
+            int count = 0;
+            while (fgets(logs[count], 512, fp) && count < MAX_LOGS) {
+                    logs[count][strcspn(logs[count], "\n")] = '\0';
+                    count++;
+
+            }
+
+            fclose(fp);
+            return count;
+}
+int parse_log(const char *line, firewall_log_t *log) {
+        return sscanf(line,
+             "{'event.start': '%79[^']','destination.ip': '%79[^']','destination.host': '%79[^']',"
+             "'source.ip': '%79[^']','source.host': '%79[^']','client.bytes': '%d','server.bytes': ' %d',"
+             "'http.request.time': '%d','http.response.time': '%d','user.name': '%79[^']',"
+             "'event.outcome': '%79[^']','event.type': '%79[^']','event.category': '%79[^']',"
+             "'event.action': '%79[^']'}",
+             log->event_start, log->destination_ip, log->destination_host,
+             log->source_ip, log->source_host, &log->client_bytes, &log->server_bytes,
+             &log->http_request_time, &log->http_response_time, log->user_name,
+             log->event_outcome, log->event_type, log->event_category, log->event_action);
+}
+
+void print_log(const firewall_log_t *log) {
+[7mfirewall_log.c[27m[K[K [KESCESC[KOO[KBB[K        printf("event.start = %s\n", log->event_start);
+:[K[K [KESCESC[KOO[KAA[K[HM#include <stdio.h>
+[35;1H[K:[K[K [KESCESC[KOO[KBB[K        printf("event.start = %s\n", log->event_start);
+:[K[K [KESCESC[KOO[KBB[K        printf("destination.ip = %s, destination.host = %s\n", log->destination_ip, log->destination :[K[K [KESCESC[KOO[KBB[K_host);
+:[K[K [KESCESC[KOO[KBB[K        printf("source.ip = %s, source.host = %s\n", log->source_ip, log->source_host);
+:[K[K [KESCESC[KOO[KBB[K        printf("client.bytes = %d, server.bytes = %d\n", log->client_bytes, log->server_bytes);
+:[K[K [KESCESC[KOO[KBB[K        printf("http.request.time = %d, http.response.time = %d\n", log->http_request_time, log->htt :[K[K [KESCESC[KOO[KBB[Kp_response_time);
+:[K[K [KESCESC[KOO[KBB[K        printf("user.name = %s\n", log->user_name);
+:[K[K [KESCESC[KOO[KBB[K        printf("event.outcome = %s, event.type = %s, event.category = %s, event.action = %s\n",
+:[K[K [KESCESC[KOO[KBB[K                log->event_outcome, log->event_type, log->event_category, log->event_action);
+:[K[K [KESCESC[KOO[KBB[K}                  
+:[K[K [KESCESC[KOO[KBB[K
+[7m(END)[27m[K[K [KESCESC[KOO[KBB[K[K[7m(END)[27m[K[K [KESCESC[KOO[KBB[K[K[7m(END)[27m[K[K [KESCESC[KOO[KBB[K[K[7m(END)[27m[K[K [KESCESC[KOO[KAA[K[HM                    logs[count][strcspn(logs[count], "\n")] = '\0';
+[35;1H[K:[K[K [KESCESC[KOO[KAA[K[HM            while (fgets(logs[count], 512, fp) && count < MAX_LOGS) {
+[35;1H[K:[K[K [KESCESC[KOO[KAA[K[HM            int count = 0;
+[35;1H[K:[K[K [KESCESC[KOO[KAA[K[HM            
+[35;1H[K:[K[K [KESCESC[KOO[KAA[K[HM            if (!fp) return 0;
+[35;1H[K:[K[K [KESCESC[KOO[KAA[K[HM            FILE *fp = fopen(filename, "r");
+[35;1H[K:[K[K [KESCESC[KOO[KAA[K[HMint read_logs_from_file(const char *filename, char logs[][512]) {
+[35;1H[K:[K[K [KESCESC[KOO[KAA[K[HM
+[35;1H[K:[K[K [KESCESC[KOO[KAA[K[HM#include "firewall_log.h"
+[35;1H[K:[K[K [KESCESC[KOO[KAA[K[HM#include <string.h>
+[35;1H[K:[K[K [KESCESC[KOO[KAA[K[HM#include <stdlib.h>
+[35;1H[K:[K[K [KESCESC[KOO[KAA[K[HM#include <stdio.h>
+[35;1H[K:[K[K [KESCESC[KOO[KAA[K[K:[K[K [KESCESC[KOO[KAA[K[K:[K[K [KESCESC[KOO[KAA[K[K:[K[K [KESCESC[KOO[KAA[K[K:[K[K [KESCESC[KOO[KAA[K[K:[K[K [KESCESC[KOO[KAA[K[K:[K[K [KESCESC[KOO[KAA[K[K:[K[K [KESCESC[KOO[KAA[K[K:[K[K [KESCESC[KOO[KAA[K[K:[K[K [KESCESC[KOO[KAA[K[K:[K[K [KESCESC[KOO[KAA[K[K:[K[K [KESCESC[KOO[KAA[K[K:[K[K [KESCESC[KOO[KAA[K[K:[K[K [KESCESC[KOO[KBB[K        printf("event.start = %s\n", log->event_start);
+:[K[K [KESCESC[KOO[KBB[K        printf("destination.ip = %s, destination.host = %s\n", log->destination_ip, log->destination :[K[K [KESCESC[KOO[KBB[K_host);
+:[K[K [KESCESC[KOO[KBB[K        printf("source.ip = %s, source.host = %s\n", log->source_ip, log->source_host);
+:[K[K [KESCESC[KOO[KBB[K        printf("client.bytes = %d, server.bytes = %d\n", log->client_bytes, log->server_bytes);
+:[K[K [KESCESC[KOO[KBB[K        printf("http.request.time = %d, http.response.time = %d\n", log->http_request_time, log->htt :[K[K [KESCESC[KOO[KBB[Kp_response_time);
+:[K[K [KESCESC[KOO[KBB[K        printf("user.name = %s\n", log->user_name);
+:[K[K [KESCESC[KOO[KBB[K        printf("event.outcome = %s, event.type = %s, event.category = %s, event.action = %s\n",
+:[K[K [KESCESC[KOO[KBB[K                log->event_outcome, log->event_type, log->event_category, log->event_action);
+:[K[K [KESCESC[KOO[KBB[K}                  
+:[K[K [KESCESC[KOO[KBB[K
+[7m(END)[27m[K[K [KESCESC[KOO[KBB[K[K[7m(END)[27m[K[K [KESCESC[KOO[KBB[K[K[7m(END)[27m[K[K [KESCESC[KOO[KBB[K[K[7m(END)[27m[K[K [KESCESC[KOO[KBB[K[K[7m(END)[27m[K[K [KESCESC[KOO[KBB[K[K[7m(END)[27m[K[K [KESCESC[KOO[KBB[K[K[7m(END)[27m[K[K [KESCESC[KOO[KBB[K[K[7m(END)[27m[K[K [KESCESC[KOO[KBB[K[K[7m(END)[27m[K[K [KESCESC[KOO[KBB[K[K[7m(END)[27m[K[K[?1l>[?1049l[23;0;0t]0;gward22@mason:~/cs222_pa3[gward22@mason cs222_pa3]$ cat firewall_log.h 
+#ifndef FIREWALL_LOG_H
+#define FIREWALL_LOG_H
+
+#define STR_SIZE 80
+#define MAX_LOGS 100
+
+typedef struct {
+	    char event_start[STR_SIZE];
+	    char destination_ip[STR_SIZE];
+	    char destination_host[STR_SIZE];
+            char source_ip[STR_SIZE];
+	    char source_host[STR_SIZE];
+	    int client_bytes;
+	    int server_bytes;
+	    int http_request_time;
+	    int http_response_time;
+	    char user_name[STR_SIZE];
+	    char event_outcome[STR_SIZE];
+	    char event_type[STR_SIZE];
+	    char event_category[STR_SIZE];
+	    char event_action[STR_SIZE];
+} firewall_log_t;
+
+int read_logs_from_file(const char *filename, char logs[][512]);
+int parse_log(const char *line, firewall_log_t *log);
+void print_log(const firewall_log_t *log);
+
+#endif
+						 
+							   
+]0;gward22@mason:~/cs222_pa3[gward22@mason cs222_pa3]$ cat makefile
+program3_gward22_firewall_log: main.o firewall_log.o
+		gcc -g -o program3_gward22_firewall_log main.o firewall_log.o
+
+main.o: main.c firewall_log.h
+		gcc -g -c -I. main.c
+
+firewall_log.o: firewall_log.c firewall_log.h
+		gcc -g -c -I. firewall_log.c
+
+clean:
+		rm -f *.o program3_gward22_firewall_log
+
+]0;gward22@mason:~/cs222_pa3[gward22@mason cs222_pa3]$ make clean
+rm -f *.o program3_gward22_firewall_log
+]0;gward22@mason:~/cs222_pa3[gward22@mason cs222_pa3]$ make
+gcc -g -c -I. main.c
+gcc -g -c -I. firewall_log.c
+gcc -g -o program3_gward22_firewall_log main.o firewall_log.o
+]0;gward22@mason:~/cs222_pa3[gward22@mason cs222_pa3]$ ./program3_gward22_firewall_log firewall.log
+First log parsed:
+event.start = 01:05:2021 05:11:10
+destination.ip = 93.115.29.34, destination.host = test.creditcard.com
+source.ip = 10.189.90.63, source.host = u120823domain.corp.com
+client.bytes = 177, server.bytes = 4919
+http.request.time = 14, http.response.time = 113
+user.name = u120823
+event.outcome = blocked, event.type = firewall, event.category = adware, event.action = threat_filter
+
+Matching log found at index 15:
+event.start = 01:05:2021 05:11:25
+destination.ip = 64.227.105.9, destination.host = goooooogol.com
+source.ip = 10.189.90.64, source.host = u210820domain.corp.com
+client.bytes = 195, server.bytes = 4724
+http.request.time = 64, http.response.time = 160
+user.name = u210820
+event.outcome = blocked, event.type = firewall, event.category = spyware, event.action = threat_filter
+]0;gward22@mason:~/cs222_pa3[gward22@mason cs222_pa3]$ gdb program3_gward22_firewall_log
+GNU gdb (GDB) Red Hat Enterprise Linux 8.2-20.el8
+Copyright (C) 2018 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+Type "show copying" and "show warranty" for details.
+This GDB was configured as "x86_64-redhat-linux-gnu".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+    <http://www.gnu.org/software/gdb/documentation/>.
+
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+Reading symbols from program3_gward22_firewall_log...done.
+(gdb) brek[Kak maim[Kmn[K[Kn
+Breakpoint 1 at 0x40088e: file main.c, line 7.
+(gdb) run firewall.log
+Starting program: /home/u3/gward22/cs222_pa3/program3_gward22_firewall_log firewall.log
+
+Breakpoint 1, main (argc=2, argv=0x7fffffffe378) at main.c:7
+7		if (argc != 2){
+Missing separate debuginfos, use: yum debuginfo-install glibc-2.28-251.el8_10.5.x86_64
+(gdb) next
+15		int count = read_logs_from_file(argv[1], lines);
+(gdb) quit
+A debugging session is active.
+
+	Inferior 1 [process 2148925] will be killed.
+
+Quit anyway? (y or n) when [K[K[K[K[Ky
+]0;gward22@mason:~/cs222_pa3[gward22@mason cs222_pa3]$ exit
+exit
+
+Script done on 2025-04-11 19:08:14-04:00
